@@ -11,6 +11,7 @@
 # **************************************************************************** #
 
 import socket
+import json
 
 class Client:
 	def __init__(self, server, socket: socket.socket, addr: tuple, client_id: int) -> None:
@@ -20,16 +21,33 @@ class Client:
 		self.sock:		socket.socket	= socket
 		self.addr:		tuple			= addr
 
-	def send(self, data: str) -> None:
-		self.sock.sendall(data.encode())
-	
+		self.connected: bool 			= True
+
+	def send(self, data: str) -> bool:
+		try:
+			self.sock.sendall(data.encode())
+		except OSError:
+			return False
+		return True
+
+	def sendData(self, data_type: str, data: list) -> bool:
+		payload = [data_type, data]
+		return self.send(json.dumps(payload))
+
 	def recv(self) -> str:
 		try:
 			return self.sock.recv(1024).decode()
 		except ConnectionResetError:
 			return ""
+		except ConnectionAbortedError:
+			return ""
 
 	def close(self) -> None:
+		if (not self.connected):
+			return
+		self.connected = False
+
+		self.sendData("command", ["close", []])
 		self.sock.close()
 		self.server.removeClient(self)
 		print(f"Connection from {self.addr} closed")

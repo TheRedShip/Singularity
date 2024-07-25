@@ -10,12 +10,16 @@
 #                                                                              #
 # **************************************************************************** #
 
+import json
 import socket
 from time import sleep
 
+from commands import Command
+
 class Client:
 	def __init__(self) -> None:
-		self.s = None
+		self.socket:	socket.socket = None
+		self.commands:	Command = Command(self)
 
 		self.initSocket()
 
@@ -23,8 +27,8 @@ class Client:
 		try:
 			print("trying..")
 
-			self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			self.s.connect(('localhost', 5454))
+			self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			self.socket.connect(('localhost', 5454))
 		
 		except ConnectionRefusedError:
 			sleep(5)
@@ -37,12 +41,25 @@ class Client:
 			data = self.recv()
 			if not data:
 				break
-			print(f"Received data: {data.decode()}")
-		
+
+			data = json.loads(data)
+			data_type = data[0]
+			if (data_type == "command"):
+				command = data[1][0]
+				command_args = data[1][1]
+
+				self.commands.command(command, command_args)
+			print("received:", data)	
+
 		self.initSocket()
 
 	def recv(self) -> str:
 		try:
-			return self.s.recv(1024).decode()
+			return self.socket.recv(1024).decode()
 		except ConnectionResetError:
 			return ""
+		except OSError:
+			return ""
+		
+	def close(self) -> None:
+		self.socket.close()

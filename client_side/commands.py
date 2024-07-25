@@ -1,32 +1,30 @@
 # **************************************************************************** #
 #                                                                              #
 #                                                         :::      ::::::::    #
-#    main.py                                            :+:      :+:    :+:    #
+#    commands.py                                        :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
 #    By: TheRed <TheRed@students.42.fr>             +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2024/07/21 12:18:05 by TheRed            #+#    #+#              #
-#    Updated: 2024/07/21 12:18:05 by TheRed           ###   ########.fr        #
+#    Created: 2024/07/22 00:20:32 by TheRed            #+#    #+#              #
+#    Updated: 2024/07/22 00:20:32 by TheRed           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
-import signal
+class Command:
+	def __init__(self, client) -> None:
+		from client import Client
 
-from server import Server
+		self.client:	Client = client
 
-serv = None
+	def command(self, command_name: str, args: list) -> None:
+		command_list = dir(self)
+		
+		if command_name in command_list:
+			getattr(self, command_name)(args)
 
-def signal_handler(sig, frame):
-	global serv
-	serv.close()
+	def shell():
+		pass
 
-def main() -> None:
-	global serv
-	
-	signal.signal(signal.SIGINT, signal_handler)
-
-	serv = Server()
-	serv.handleInput()
-
-if __name__ == "__main__":
-	main()
+	def close(self, args: list) -> None:
+		print("client closed")
+		self.client.close()
