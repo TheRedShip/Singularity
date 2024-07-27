@@ -29,6 +29,8 @@ class Client:
 
 			self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			self.socket.connect(('localhost', 5454))
+			
+			print("connected")
 		
 		except ConnectionRefusedError:
 			sleep(5)
@@ -43,13 +45,14 @@ class Client:
 				break
 
 			data = json.loads(data)
+			print("received:", data)	
+
 			data_type = data[0]
 			if (data_type == "command"):
 				command = data[1][0]
 				command_args = data[1][1]
 
 				self.commands.command(command, command_args)
-			print("received:", data)	
 
 		self.initSocket()
 
@@ -60,6 +63,15 @@ class Client:
 			return ""
 		except OSError:
 			return ""
+		
+	def send(self, data: str, encoding=True) -> bool:
+		try:
+			if (encoding):
+				data = data.encode()
+			self.socket.sendall(data)
+		except:
+			return False
+		return True
 		
 	def close(self) -> None:
 		self.socket.close()

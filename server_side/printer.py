@@ -83,6 +83,18 @@ class Printer:
 		self.cyan(f"╰─", end="")
 		self.cyan("$ ", end="")
 
+	def good(self, data: str, end="\n") -> None:
+		self.green("[+] ", end="")
+		self.white(data, end=end)
+
+	def info(self, data:str, end="\n") -> None:
+		self.lightblue("[*] ", end="")
+		self.white(data, end=end)
+	
+	def bad(self, data: str, end="\n") -> None:
+		self.lightred("[-] ", end="")
+		self.white(data, end=end)
+
 	def color(self, data: str, color: str, end="\n") -> None:
 		print(self.rgb_to_ansi(*self.hex_to_rgb(color)) + data + Style.RESET_ALL, end=end)
 

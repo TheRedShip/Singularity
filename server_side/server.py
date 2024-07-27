@@ -32,7 +32,6 @@ class Server:
 		self.listen_thread = Thread(target=self.listen, args=())
 		self.listen_thread.start()
 
-
 	def listen(self) -> None:
 		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.socket.bind(('', 5454))
@@ -48,23 +47,13 @@ class Server:
 			new_client = Client(self, client, addr, len(self.clients))
 			self.clients.append(new_client)
 
-			Thread(target=self.handleClient, args=(new_client,)).start()
+			self.printer.good(f"New client from {new_client.addr[0]} {new_client.addr[1]}")
 
 	def removeClient(self, client: Client) -> None:
 		self.clients.remove(client)
 		for client in self.clients:
 			client.client_id = self.clients.index(client)
 
-	def handleClient(self, client: Client) -> None:
-		print(f"New client from {client.addr}")
-		while True:
-			data = client.recv()
-			if not data:
-				break
-
-			print(f"Received data: {data}")
-
-		client.close()
 
 	def handleInput(self) -> None:
 		while True:
