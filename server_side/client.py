@@ -41,6 +41,7 @@ class Client:
 			response = self.socket.recv(size)
 			return response.decode(decoding)
 		except:
+			self.close()
 			return ""
 
 	def close(self) -> None:
@@ -51,4 +52,4 @@ class Client:
 		self.sendData("command", ["close", []])
 		self.socket.close()
 		self.server.removeClient(self)
-		print(f"Connection from {self.addr} closed")
+		self.server.printer.bad(f"{self.client_id} : {self.addr} disconnected\n")

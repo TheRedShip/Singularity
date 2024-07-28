@@ -48,7 +48,6 @@ class Command:
 		
 		response = client.recv()
 		if not response:
-			printer.bad(f"{self.server.client_id} : {client.addr} disconnected\n")
 			return
 
 		info = json.loads(response)

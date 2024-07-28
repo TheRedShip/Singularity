@@ -69,12 +69,11 @@ class Server:
 
 
 	def close(self) -> None:
-		print("\n\nExiting...")
+		print("\n\n")
+		self.printer.info("Catched exit..")
 		
 		for client in self.clients:
 			client.close()
-
 		self.socket.close()
-
 		sys.exit(0)
 	
