@@ -59,9 +59,7 @@ class Client:
 	def recv(self) -> str:
 		try:
 			return self.socket.recv(1024).decode()
-		except ConnectionResetError:
-			return ""
-		except OSError:
+		except:
 			return ""
 		
 	def send(self, data: str, encoding=True) -> bool:
