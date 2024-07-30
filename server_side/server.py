@@ -48,6 +48,16 @@ class Server:
 			self.clients.append(new_client)
 
 			self.printer.good(f"New client from {new_client.addr[0]} {new_client.addr[1]}")
+		
+	def getClient(self, client_id: int | None = None, error: bool = True) -> Client | bool:
+		id = client_id
+		if (client_id == None):
+			id = self.client_id
+		if (id < 0 or id >= len(self.clients)):
+			if (error):
+				self.printer.bad(f"Wrong client id\n")
+			return False
+		return self.clients[id]
 
 	def removeClient(self, client: Client) -> None:
 		self.clients.remove(client)
@@ -64,9 +74,11 @@ class Server:
 			
 			command = args[0]
 			args = args[1:]
+			
+			if (len(command) == 0):
+				continue
 
 			self.commands.command(command, args)
-
 
 	def close(self) -> None:
 		print("\n\n")
