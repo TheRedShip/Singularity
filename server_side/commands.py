@@ -23,6 +23,19 @@ class Command:
 
 		self.server:	Server = server
 
+	def persistance(self, args: list, client: Client) -> None:
+		client.sendData("command", ["persistance", []])
+		response = client.recv()
+
+		if (not response):
+			return
+
+		response = json.loads(response)
+		if (response["success"]):
+			self.server.printer.good("Successfully added persistance")
+		else:
+			self.server.printer.bad("Failed to add persistance")
+
 	def command(self, command_name: str, args: list) -> None:
 		print("\n")
 		command_list = dir(self)

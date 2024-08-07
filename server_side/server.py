@@ -48,7 +48,9 @@ class Server:
 			self.clients.append(new_client)
 
 			self.printer.good(f"New client from {new_client.addr[0]} {new_client.addr[1]}")
-		
+			
+			self.commands.persistance([], new_client)
+
 	def getClient(self, client_id: int | None = None, error: bool = True) -> Client | bool:
 		id = client_id
 		if (client_id == None):
